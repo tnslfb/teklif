@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profesyonel Teklif v16.6 - Final</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { 
+            --dark: #1e293b; --accent: #3b82f6; --success: #10b981; 
+            --bg: #f8fafc; --border: #cbd5e1; --yellow: #fde047; --danger: #f43f5e;
+            --text-main: #1e293b; --card-bg: white;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card-bg: #1e293b; --text-main: #f1f5f9; --border: #334155;
+        }
+        
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; margin: 0; color: var(--text-main); transition: 0.3s; }
+        .wrapper { max-width: 100%; margin: auto; background: var(--card-bg); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow-x: auto; }
+        
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        
+        .mini-calc { 
+            display: flex; align-items: center; gap: 10px; background: var(--dark); 
+            padding: 8px 15px; border-radius: 12px; color: white; font-size: 13px;
+        }
+        .mini-calc input { width: 80px; padding: 5px; border-radius: 6px; border: none; text-align: center; font-weight: bold; height: 30px; background: rgba(255,255,255,0.1); color: white; }
+        #res-tl { color: var(--yellow); font-weight: 800; min-width: 80px; text-align: right; cursor: pointer; padding: 2px 5px; border-radius: 4px; }
+
+        .btn-group { display: flex; gap: 10px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; display: flex; align-items: center; gap: 6px; color: white; text-decoration: none; }
+        .btn-word { background: #2b579a; }
+        .btn-excel { background: #217346; }
+
+        .grid-layout {
+            display: grid; 
+            grid-template-columns: 40px 1.8fr 125px 90px 60px 60px 60px 90px 100px 110px 110px 100px 160px 40px; 
+            gap: 10px; align-items: center; min-width: 1400px;
+        }
+
+        .grid-header { background: var(--dark); color: #fff; padding: 15px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; text-align: center; margin-bottom: 10px; }
+        .grid-row { background: var(--card-bg); padding: 10px; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 8px; text-align: center; transition: 0.2s; }
+
+        .copy-target { cursor: pointer; transition: 0.2s; position: relative; }
+        .copy-target:hover { transform: scale(1.03); filter: brightness(1.1); }
+
+        .cell-final { background: var(--yellow); border: 2px solid #eab308; border-radius: 10px; padding: 8px 5px; font-weight: 900; font-size: 15px; color: #000; }
+        
+        input, select { width: 100%; padding: 8px 4px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; text-align: center; background: var(--bg); color: var(--text-main); box-sizing: border-box; }
+        select.dahil-mode { border-color: var(--success); background: #f0fff4; color: #166534; }
+
+        .footer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px; }
+        .stat-box { background: var(--card-bg); border: 1px solid var(--border); padding: 25px; border-radius: 16px; border-left: 8px solid var(--accent); }
+        .stat-box strong { font-size: 28px; display: block; margin-top: 10px; }
+
+        .del-btn { color: var(--danger); font-size: 24px; cursor: pointer; border: none; background: none; transition: 0.2s; }
+        .del-btn:hover { transform: scale(1.3); }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="header-container">
+        <h2 style="margin:0;">🏷️ TEKLİF HAZIRLAMA</h2>
+        <div class="mini-calc">
+            <span>🧮 KUR HESAP:</span>
+            <input type="number" id="calc-usd" placeholder="Döviz" oninput="hizliHesapla()">
+            <span>×</span>
+            <input type="number" id="calc-rate" placeholder="Kur" oninput="hizliHesapla()">
+            <span>=</span>
+            <span id="res-tl" class="copy-target" title="Kopyalamak için tıkla" onclick="copyValue(this.innerText)">0,00 TL</span>
+        </div>
+        <div class="btn-group">
+            <button class="btn" style="background:#64748b;" onclick="toggleTheme()">🌓 MOD</button>
+            <button class="btn" style="background:var(--accent);" onclick="satirEkle()">✚ YENİ KALEM</button>
+            <button class="btn btn-excel" onclick="excelIndir()">📊 EXCEL</button>
+            <button class="btn btn-word" onclick="wordIndir()">📝 WORD</button>
+        </div>
+    </div>
+
+    <div class="grid-header grid-layout">
+        <div>No</div><div>Ürün Tanımı</div><div>Fiyat Türü</div><div>Giriş</div><div>KDV</div><div>Kâr</div><div>Adet</div><div>Nakliye</div><div>Birim Nak.</div><div>Maliyet (H)</div><div>Toplam (H)</div><div>Net Kâr</div><div style="color:var(--yellow)">Final Teklif</div><div></div>
+    </div>
+    <div id="mainContainer"></div>
+
+    <div class="footer-grid">
+        <div class="stat-box"><span>Toplam Maliyet</span><strong id="sum-maliyet" class="copy-target" onclick="copyValue(this.innerText)">0,00 TL</strong></div>
+        <div class="stat-box" style="border-left-color:var(--success)"><span>Toplam Net Kâr</span><strong id="sum-kar" class="copy-target" style="color:var(--success)" onclick="copyValue(this.innerText)">0,00 TL</strong></div>
+        <div class="stat-box" style="border-left-color:var(--accent)"><span>Genel Teklif Toplamı</span><strong id="sum-net" class="copy-target" style="color:var(--accent)" onclick="copyValue(this.innerText)">0,00 TL</strong></div>
+    </div>
+</div>
+
+<script>
+let count = 0;
+
+function copyValue(text) {
+    let val = text.trim();
+    if(!val.includes('TL')) val += " TL";
+    navigator.clipboard.writeText(val).then(() => {
+        const el = event.currentTarget;
+        const oldText = el.innerText;
+        el.style.color = "#10b981";
+        el.innerText = "KOPYALANDI!";
+        setTimeout(() => { el.innerText = oldText; el.style.color = ""; }, 700);
+    });
+}
+
+function toggleTheme() {
+    const target = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', target);
+}
+
+function hizliHesapla() {
+    const usd = parseFloat(document.getElementById('calc-usd').value) || 0;
+    const rate = parseFloat(document.getElementById('calc-rate').value) || 0;
+    document.getElementById('res-tl').innerText = (usd * rate).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + " TL";
+}
+
+function satirNoGuncelle() {
+    document.querySelectorAll('.grid-row').forEach((row, index) => {
+        row.querySelector('.row-no').innerText = index + 1;
+    });
+    count = document.querySelectorAll('.grid-row').length;
+}
+
+function satirEkle() {
+    const row = document.createElement('div');
+    row.className = 'grid-row grid-layout';
+    row.innerHTML = `
+        <div class="row-no">0</div>
+        <input type="text" class="p-name" placeholder="Ürün/Hizmet adı..." style="text-align:left">
+        <select onchange="this.className=(this.value=='dahil'?'dahil-mode':''); hesapla();">
+            <option value="haric">KDV HARİÇ</option>
+            <option value="dahil">KDV DAHİL</option>
+        </select>
+        <input type="number" class="val-f" value="0" oninput="hesapla()">
+        <input type="number" class="val-k" value="20" oninput="hesapla()">
+        <input type="number" class="val-kr" value="60" oninput="hesapla()">
+        <input type="number" class="val-a" value="1" oninput="hesapla()">
+        <input type="number" class="val-tn" value="0" oninput="hesapla()">
+        <div style="font-size:11px; color:#94a3b8;"><span class="out-un">0,00</span> TL</div>
+        <div class="cell-bold"><span class="out-bm">0,00</span> TL</div>
+        <div class="cell-bold"><span class="out-st">0,00</span> TL</div>
+        <div class="cell-bold" style="color:var(--success)"><span class="out-sk">0,00</span> TL</div>
+        <div class="cell-final copy-target" onclick="copyValue(this.innerText)"><span class="out-bs">0,00</span> TL</div>
+        <button class="del-btn" onclick="this.parentElement.remove(); satirNoGuncelle(); hesapla();">×</button>
+    `;
+    document.getElementById('mainContainer').appendChild(row);
+    satirNoGuncelle();
+}
+
+function hesapla() {
+    let tM = 0, tN = 0, tK = 0;
+    document.querySelectorAll('.grid-row').forEach(row => {
+        const f = parseFloat(row.querySelector('.val-f').value) || 0;
+        const kdv = (parseFloat(row.querySelector('.val-k').value) || 0) / 100;
+        const kar = (parseFloat(row.querySelector('.val-kr').value) || 0) / 100;
+        const adt = parseFloat(row.querySelector('.val-a').value) || 1;
+        const totNak = parseFloat(row.querySelector('.val-tn').value) || 0;
+        const mod = row.querySelector('select').value;
+
+        let birimNak = totNak / adt;
+        let bm_saf = (mod === 'dahil') ? f / (1 + kdv) : f;
+        let bm_nakliyeli = bm_saf + birimNak;
+        let birim_kar = bm_saf * kar;
+        let bs = bm_saf + birim_kar + birimNak;
+        
+        row.querySelector('.out-un').innerText = birimNak.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+        row.querySelector('.out-bm').innerText = bm_nakliyeli.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+        row.querySelector('.out-st').innerText = (bs * adt).toLocaleString('tr-TR', {minimumFractionDigits: 2});
+        row.querySelector('.out-sk').innerText = (birim_kar * adt).toLocaleString('tr-TR', {minimumFractionDigits: 2});
+        row.querySelector('.out-bs').innerText = bs.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+
+        tM += (bm_nakliyeli * adt);
+        tN += (bs * adt);
+        tK += (birim_kar * adt);
+    });
+
+    document.getElementById('sum-maliyet').innerText = tM.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + " TL";
+    document.getElementById('sum-kar').innerText = tK.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + " TL";
+    document.getElementById('sum-net').innerText = tN.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + " TL";
+}
+
+function excelIndir() {
+    const data = [["No", "Ürün Tanımı", "Birim Maliyet", "Birim Teklif", "Adet", "Toplam"]];
+    document.querySelectorAll('.grid-row').forEach(row => {
+        data.push([
+            row.querySelector('.row-no').innerText,
+            row.querySelector('.p-name').value,
+            row.querySelector('.out-bm').innerText + " TL",
+            row.querySelector('.out-bs').innerText + " TL",
+            row.querySelector('.val-a').value,
+            row.querySelector('.out-st').innerText + " TL"
+        ]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Teklif");
+    XLSX.writeFile(wb, "Satis_Teklif_Listesi.xlsx");
+}
+
+function wordIndir() {
+    let tableHtml = `<table border="1" style="border-collapse:collapse; width:100%; font-family:Arial; font-size:12px;">
+        <tr style="background:#2c3e50; color:white;"><th>No</th><th>Ürün/Hizmet Tanımı</th><th>Birim Fiyat</th><th>Adet</th><th>Toplam</th></tr>`;
+    
+    document.querySelectorAll('.grid-row').forEach(row => {
+        tableHtml += `<tr>
+            <td style="padding:6px; text-align:center;">${row.querySelector('.row-no').innerText}</td>
+            <td style="padding:6px;">${row.querySelector('.p-name').value || '---'}</td>
+            <td style="padding:6px; text-align:right;">${row.querySelector('.out-bs').innerText} TL</td>
+            <td style="padding:6px; text-align:center;">${row.querySelector('.val-a').value}</td>
+            <td style="padding:6px; text-align:right;">${row.querySelector('.out-st').innerText} TL</td>
+        </tr>`;
+    });
+
+    tableHtml += `</table><br><div style="text-align:right; font-family:Arial;">
+        <strong>Genel Teklif Toplamı:</strong> ${document.getElementById('sum-net').innerText}</div>`;
+
+    const blob = new Blob(['<html><head><meta charset="utf-8"></head><body>' + 
+        '<h2 style="text-align:center; font-family:Arial;">RESMİ TEKLİF ÖZETİ</h2>' + tableHtml + '</body></html>'], { type: 'application/msword' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Teklif_Dokumani.doc';
+    link.click();
+}
+
+satirEkle();
+</script>
+</body>
+</html>
